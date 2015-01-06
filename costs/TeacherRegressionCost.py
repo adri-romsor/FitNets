@@ -136,8 +136,15 @@ class TeacherRegressionCost(DefaultDataSpecsMixin, Cost):
             Optional extra arguments. Not used by the base class.
         """
         
-	cost_wrt_y = self.cost_wrt_target(model,data)
-        cost_wrt_teacher = self.cost_wrt_teacher(model,data)
+        if self.wtarget == 0:
+	  cost_wrt_y = 0
+	else:
+	  cost_wrt_y = self.cost_wrt_target(model,data)
+	  
+	if self.wteach == 0:
+	  cost_wrt_teacher = 0
+	else:
+	  cost_wrt_teacher = self.cost_wrt_teacher(model,data)
         
 	# Compute cost
         cost = self.wtarget*cost_wrt_y + self.wteach*cost_wrt_teacher 
