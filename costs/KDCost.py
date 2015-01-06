@@ -8,7 +8,7 @@ from pylearn2.utils import sharedX
 
 
 
-class TeacherRegressionCost(DefaultDataSpecsMixin, Cost):
+class KDCost(DefaultDataSpecsMixin, Cost):
     """
     Represents an objective function to be minimized by some
     `TrainingAlgorithm`.
@@ -18,21 +18,21 @@ class TeacherRegressionCost(DefaultDataSpecsMixin, Cost):
     # (X, Y) pair, and Y cannot be None.
     supervised = True
     
-    def __init__(self, teacher_path, relaxation_term=1, wtarget=1, wteach=1, hints=None):
-      self.relaxation_term = relaxation_term
+    def __init__(self, teacher_path, temperature=1, lambda_target=1, lambda_teach=1, hints=None):
+      self.temperature = temperature
       
-      # Load teacher network and change parameters according to relaxation_term.
+      # Load teacher network and change parameters according to temperature.
       fo = open(teacher_path, 'r')
       teacher = pkl.load(fo)
       fo.close()
       
       tparams = teacher.layers[-1].get_param_values()
-      tparams = [x/float(self.relaxation_term) for x in tparams]
+      tparams = [x/float(self.temperature) for x in tparams]
       teacher.layers[-1].set_param_values(tparams)
 
       self.teacher = teacher
-      self.wtarget = wtarget
-      self.wteach = sharedX(wteach, 'wteach')
+      self.lambda_target = lambda_target
+      self.lambda_teach = sharedX(lambda_teach, 'lambda_teach')
       self.hints = hints
       
     def cost_wrt_target(self, model, data):
@@ -102,12 +102,12 @@ class TeacherRegressionCost(DefaultDataSpecsMixin, Cost):
         
         axes = model.input_space.axes
                                                 
-        # Compute teacher relaxed output
+        # Compute teacher softened (relaxed) output
 	Pt_y_given_x_relaxed = self.teacher.fprop(x)
 	
-	# Compute student relaxed output
+	# Compute student softened (relaxed) output
 	sparams = model.layers[-1].get_param_values()
-	sparams_relaxed = [item/float(self.relaxation_term) for item in sparams]
+	sparams_relaxed = [item/float(self.temperature) for item in sparams]
 	model.layers[-1].set_param_values(sparams_relaxed) 
         Ps_y_given_x_relaxed = model.fprop(x)	
         model.layers[-1].set_param_values(sparams)
@@ -136,18 +136,18 @@ class TeacherRegressionCost(DefaultDataSpecsMixin, Cost):
             Optional extra arguments. Not used by the base class.
         """
         
-        if self.wtarget == 0:
+        if self.lambda_target == 0:
 	  cost_wrt_y = 0
 	else:
 	  cost_wrt_y = self.cost_wrt_target(model,data)
 	  
-	if self.wteach == 0:
+	if self.lambda_teach == 0:
 	  cost_wrt_teacher = 0
 	else:
 	  cost_wrt_teacher = self.cost_wrt_teacher(model,data)
         
 	# Compute cost
-        cost = self.wtarget*cost_wrt_y + self.wteach*cost_wrt_teacher 
+        cost = self.lambda_target*cost_wrt_y + self.lambda_teach*cost_wrt_teacher 
         
         return T.mean(cost)
         
@@ -182,19 +182,19 @@ class TeacherRegressionCost(DefaultDataSpecsMixin, Cost):
             Maps channels names to expressions for channel values.
         """
                
-	rval = super(TeacherRegressionCost, self).get_monitoring_channels(model,data)
+	rval = super(KDCost, self).get_monitoring_channels(model,data)
 	                
         value_cost_wrt_target = self.cost_wrt_target(model,data)
         if value_cost_wrt_target is not None:
 	   name = 'cost_wrt_target'
-	   rval[name] = self.wtarget*T.mean(value_cost_wrt_target)
+	   rval[name] = self.lambda_target*T.mean(value_cost_wrt_target)
                 
         value_cost_wrt_teacher = self.cost_wrt_teacher(model,data)
         if value_cost_wrt_teacher is not None:
 	   name = 'cost_wrt_teacher'
-	   rval[name] = self.wteach*T.mean(value_cost_wrt_teacher)
+	   rval[name] = self.lambda_teach*T.mean(value_cost_wrt_teacher)
 	   
-	rval['wteach'] = self.wteach
+	rval['lambda_teach'] = self.lambda_teach
 	   	
         return rval        
 

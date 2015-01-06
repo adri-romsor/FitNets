@@ -15,7 +15,7 @@ from pylearn2.train_extensions.best_params import MonitorBasedSaveBest
 from pylearn2.termination_criteria import MonitorBased, And, Or
 
 # costs imports
-from FitNets.costs.TeacherHintRegressionCost import TeacherHintRegressionCost
+from FitNets.costs.HintCost import HintCost
 from FitNets.extensions.TeacherDecayOverEpoch import TeacherDecayOverEpoch
 
 
@@ -127,7 +127,7 @@ def fitnets_hints(student, fromto_student, teacher, hintlayer, regressor_type):
       raise AssertionError('Regressor must be convolutional (conv) or fully-connected (fc)')
 
     # Change cost to optimize wrt teacher hints
-    student.algorithm.cost = TeacherHintRegressionCost(teacher,hintlayer)
+    student.algorithm.cost = HintCost(teacher,hintlayer)
     
     # Set monitor_targets to false (no targets needed for hints training (Fitnets - stage 1))
     student.model.monitor_targets = False

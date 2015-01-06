@@ -5,7 +5,7 @@ from theano.compat.python2x import OrderedDict
 from pylearn2.models.mlp import TanhConvNonlinearity, SigmoidConvNonlinearity
 from pylearn2.models.mlp import ConvElemwise as ConvElemwisePL2
 
-class TeacherHintRegressionCost(DefaultDataSpecsMixin, Cost):
+class HintCost(DefaultDataSpecsMixin, Cost):
     """
     Represents an objective function to be minimized by some
     `TrainingAlgorithm`.
