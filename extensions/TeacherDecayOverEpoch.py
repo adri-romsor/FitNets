@@ -23,11 +23,11 @@ class TeacherDecayOverEpoch(TrainExtension):
         The epoch on which to start shrinking the learning rate
     saturate : int
         The epoch to saturate the shrinkage
-    final_wteach : float
+    final_lambda_teach : float
         The teacher weight to use at the end of learning.
     """
 
-    def __init__(self, start, saturate, final_wteach):
+    def __init__(self, start, saturate, final_lambda_teach):
         self.__dict__.update(locals())
         del self.self
         self._initialized = False
@@ -53,7 +53,7 @@ class TeacherDecayOverEpoch(TrainExtension):
         """
         monitor = Monitor.get_monitor(model)
         self._count = monitor.get_epochs_seen()
-        self._apply_wteach(algorithm)
+        self._apply_lambda_teach(algorithm)
 
     def on_monitor(self, model, dataset, algorithm):
         """
@@ -66,33 +66,33 @@ class TeacherDecayOverEpoch(TrainExtension):
         algorithm : WRITEME
         """
         self._count += 1
-        self._apply_wteach(algorithm)
+        self._apply_lambda_teach(algorithm)
 
-    def _apply_wteach(self, algorithm): 
+    def _apply_lambda_teach(self, algorithm): 
         """Updates the teacher weight on algorithm based on the epochs elapsed."""
         if not self._initialized:
-            self._init_wteach = algorithm.cost.wteach.get_value()
-            self._step = ((self._init_wteach - self.final_wteach) /
+            self._init_lambda_teach = algorithm.cost.lambda_teach.get_value()
+            self._step = ((self._init_lambda_teach - self.final_lambda_teach) /
                           (self.saturate - self.start + 1))
             self._initialized = True
-        algorithm.cost.wteach.set_value(np.cast[config.floatX](
-            self.current_wteach()))
+        algorithm.cost.lambda_teach.set_value(np.cast[config.floatX](
+            self.current_lambda_teach()))
 
-    def current_wteach(self):
+    def current_lambda_teach(self):
         """
         Returns the teacher weight currently desired by the decay schedule.
         """
         if self._count >= self.start:
             if self._count < self.saturate:
-                new_wteach = self._init_wteach - self._step * (self._count
+                new_lambda_teach = self._init_lambda_teach - self._step * (self._count
                         - self.start + 1)
             else:
-                new_wteach = self.final_wteach
+                new_lambda_teach = self.final_lambda_teach
         else:
-            new_wteach = self._init_wteach
+            new_lambda_teach = self._init_lambda_teach
             
-        if new_wteach < 0:
-	  new_wteach = 0
+        if new_lambda_teach < 0:
+	  new_lambda_teach = 0
 
-	return new_wteach
+	return new_lambda_teach
         
