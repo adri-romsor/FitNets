@@ -228,9 +228,6 @@ def main(argv):
       student_aux = yaml_parse.load(sty)
     teacher_aux = student_aux.algorithm.cost.teacher
     
-    import pdb
-    pdb.set_trace()
-    
     # Retrieve student subnetwork and add regression to teacher layer
     student_hint = fitnets_hints(student_aux, [previous_guided, current_guided], teacher_aux, teacher_layers[i], regressor_type)
    
