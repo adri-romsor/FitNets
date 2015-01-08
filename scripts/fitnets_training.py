@@ -95,7 +95,7 @@ def fitnets_hints(student, fromto_student, teacher, hintlayer, regressor_type):
 
   # If hint or guided layers correspond to softmax layer, raise exception 
   if isinstance(teacher.layers[hintlayer], Softmax) or isinstance(student.model.layers[fromto_student[1]], Softmax):
-	raise AssertionError('FitNets Training: Stage 1 does not involve softmax layer')
+    raise AssertionError('FitNets Training: Stage 1 does not involve softmax layer')
   else:
     # Retrieve student subnetwork
     if fromto_student[1] < len(student.model.layers)-1:
@@ -114,6 +114,8 @@ def fitnets_hints(student, fromto_student, teacher, hintlayer, regressor_type):
 	student.model.layers.append(hint_reg_layer)
       elif (teacher_output_space.shape == student_output_space.shape and teacher_output_space.num_channels == student_output_space.num_channels):
 	pass
+      elif (teacher_output_space.shape > student_output_space.shape):
+	raise NotImplementedError('Convolutional regressor needs zero-padding, you may want to use a fully connected regressor instead')
     elif regressor_type == 'fc':
       raise NotImplementedError('FC')
       # Add fully-connected regressor
@@ -189,7 +191,7 @@ def main(argv):
   except getopt.GetoptError:
     usage()
     sys.exit(2) 
-    
+       
 
   # Load student
   with open(student_yaml, "r") as sty:
@@ -211,7 +213,8 @@ def main(argv):
   
   else:
     n_hints = 0
-  
+    
+    
   # FitNets Training Stage 1: Train guided layers with teacher hints 
   for i in range(n_hints):
     print 'FitNets Training Stage 1: Training student guided layer %d out of %d' % (i+1, n_hints)
@@ -224,6 +227,9 @@ def main(argv):
     with open(student_yaml, "r") as sty:
       student_aux = yaml_parse.load(sty)
     teacher_aux = student_aux.algorithm.cost.teacher
+    
+    import pdb
+    pdb.set_trace()
     
     # Retrieve student subnetwork and add regression to teacher layer
     student_hint = fitnets_hints(student_aux, [previous_guided, current_guided], teacher_aux, teacher_layers[i], regressor_type)
