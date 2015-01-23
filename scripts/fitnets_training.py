@@ -188,10 +188,15 @@ def main(argv):
     opts, args = getopt.getopt(argv, '')
     student_yaml = args[0]
     regressor_type = args[1]
+    
+    if len(args) == 2 or (len(args) > 2 and int(args[2]) == 0):
+      lr_pretrained = False
+    elif int(args[2]) == 1:
+      lr_pretrained = True
+    
   except getopt.GetoptError:
     usage()
     sys.exit(2) 
-       
 
   # Load student
   with open(student_yaml, "r") as sty:
@@ -247,8 +252,14 @@ def main(argv):
     # Save pretrained student Wguided into student model
     student.model.layers[0:current_guided+1] = best_pretrained_model.layers[0:current_guided+1]
 
-  print 'FitNets Training Stage 2: Training student softmax layer by means of KD'
- 
+  print 'FitNets Training Stage 2: Training student softmax layer by means of KD'  
+  
+  if lr_pretrained:
+    # Make the learning rate smaller for the pretrained layers
+    for i in range(0,student_layers[-1]+1):
+      student.model.layers[i].W_lr_scale = student.model.layers[i].W_lr_scale*0.1
+      student.model.layers[i].b_lr_scale = student.model.layers[i].b_lr_scale*0.1
+
   student.main_loop()
   
  # # Load best model
