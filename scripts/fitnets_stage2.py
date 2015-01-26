@@ -9,6 +9,8 @@ import cPickle as pkl
 from pylearn2.utils import serial
 from pylearn2.train_extensions.best_params import MonitorBasedSaveBest
 
+from FitNets.models.PretrainedLayerBlock import PretrainedLayerBlock
+
 def main(argv):
 
   try:
@@ -40,8 +42,9 @@ def main(argv):
 
   if lr_pretrained:
      for i in range(0,load_layer+1):
-       student.model.layers[i].W_lr_scale = 0.1*student.model.layers[i].W_lr_scale
-       student.model.layers[i].b_lr_scale = 0.1*student.model.layers[i].b_lr_scale
+       if not isinstance(student.model.layers[i],PretrainedLayerBlock):
+	student.model.layers[i].W_lr_scale = 0.1*student.model.layers[i].W_lr_scale
+	student.model.layers[i].b_lr_scale = 0.1*student.model.layers[i].b_lr_scale
 
   student.main_loop()
 
