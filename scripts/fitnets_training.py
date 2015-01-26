@@ -2,6 +2,8 @@ import math
 import random
 import os, sys, getopt
 import cPickle as pkl
+import argparse
+import os.path as op
 
 # pylearn2 imports
 from pylearn2.config import yaml_parse
@@ -17,6 +19,7 @@ from pylearn2.termination_criteria import MonitorBased, And, Or
 # costs imports
 from FitNets.costs.HintCost import HintCost
 from FitNets.extensions.TeacherDecayOverEpoch import TeacherDecayOverEpoch
+from FitNets.models.PretrainedLayerBlock import PretrainedLayerBlock
 
 
 def generateConvRegressor(teacher_hintlayer, student_layer):
@@ -182,24 +185,33 @@ def fitnets_hints(student, fromto_student, teacher, hintlayer, regressor_type):
     
   return student
     
-def main(argv):
+def main():
   
-  try:
-    opts, args = getopt.getopt(argv, '')
-    student_yaml = args[0]
-    regressor_type = args[1]
-    
-    if len(args) == 2 or (len(args) > 2 and int(args[2]) == 0):
-      lr_pretrained = False
-    elif int(args[2]) == 1:
-      lr_pretrained = True
-    
-  except getopt.GetoptError:
-    usage()
-    sys.exit(2) 
-
+  parser = argparse.ArgumentParser(
+    description='Tool for training FitNets in a stage-wise fashion.'
+  )
+  parser.add_argument(
+    'student_yaml',
+    help='Location of the FitNet YAML file.'
+  )
+  parser.add_argument(
+    'regressor_type',
+    default='conv',
+    help='Regressor type: either convolutional, conv, or fully-connected, fc.'
+  )
+  parser.add_argument(
+    '--lr_scale',
+    '-lrs',
+    type=float,
+    default=None,
+    help='Optional. Float to scale the learning rate scaler.'
+  )  
+  
+  args = parser.parse_args()
+  assert(op.exists(args.student_yaml)) 
+  
   # Load student
-  with open(student_yaml, "r") as sty:
+  with open(args.student_yaml, "r") as sty:
     student = yaml_parse.load(sty)
     
   # Load teacher network
@@ -229,12 +241,12 @@ def main(argv):
     current_guided = student_layers[i]
   
     # Load auxiliary copies of the student and the teacher to be able to modify them
-    with open(student_yaml, "r") as sty:
+    with open(args.student_yaml, "r") as sty:
       student_aux = yaml_parse.load(sty)
     teacher_aux = student_aux.algorithm.cost.teacher
     
     # Retrieve student subnetwork and add regression to teacher layer
-    student_hint = fitnets_hints(student_aux, [previous_guided, current_guided], teacher_aux, teacher_layers[i], regressor_type)
+    student_hint = fitnets_hints(student_aux, [previous_guided, current_guided], teacher_aux, teacher_layers[i], args.regressor_type)
    
     # Train student subnetwork
     student_hint.main_loop()
@@ -254,11 +266,12 @@ def main(argv):
 
   print 'FitNets Training Stage 2: Training student softmax layer by means of KD'  
   
-  if lr_pretrained:
+  if args.lr_scale is not None:
     # Make the learning rate smaller for the pretrained layers
     for i in range(0,student_layers[-1]+1):
-      student.model.layers[i].W_lr_scale = student.model.layers[i].W_lr_scale*0.1
-      student.model.layers[i].b_lr_scale = student.model.layers[i].b_lr_scale*0.1
+      if not isinstance(student.model.layers[i],PretrainedLayerBlock):
+	student.model.layers[i].W_lr_scale = student.model.layers[i].W_lr_scale*args.lr_scale
+	student.model.layers[i].b_lr_scale = student.model.layers[i].b_lr_scale*args.lr_scale
 
   student.main_loop()
   
@@ -296,4 +309,4 @@ def main(argv):
   #student.main_loop()
   
 if __name__ == "__main__":
-  main(sys.argv[1:])
+  main()

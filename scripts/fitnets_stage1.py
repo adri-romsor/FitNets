@@ -2,6 +2,8 @@ import math
 import random
 import os, sys, getopt
 import cPickle as pkl
+import argparse
+import os.path as op
 
 # pylearn2 imports
 from pylearn2.config import yaml_parse
@@ -182,24 +184,26 @@ def fitnets_hints(student, fromto_student, teacher, hintlayer, regressor_type):
     
   return student
     
-def main(argv):
+def main():
   
-  try:
-    opts, args = getopt.getopt(argv, '')
-    student_yaml = args[0]
-    regressor_type = args[1]
-    
-    if len(args) == 2 or (len(args) > 2 and int(args[2]) == 0):
-      lr_pretrained = False
-    elif int(args[2]) == 1:
-      lr_pretrained = True
-    
-  except getopt.GetoptError:
-    usage()
-    sys.exit(2) 
-
+  parser = argparse.ArgumentParser(
+    description='Tool for training FitNets stage 1.'
+  )
+  parser.add_argument(
+    'student_yaml',
+    help='Location of the FitNet YAML file.'
+  )
+  parser.add_argument(
+    'regressor_type',
+    default='conv',
+    help='Regressor type: either convolutional, conv, or fully-connected, fc.'
+  )
+  
+  args = parser.parse_args()
+  assert(op.exists(args.student_yaml))
+  
   # Load student
-  with open(student_yaml, "r") as sty:
+  with open(args.student_yaml, "r") as sty:
     student = yaml_parse.load(sty)
     
   # Load teacher network
@@ -229,16 +233,16 @@ def main(argv):
     current_guided = student_layers[i]
   
     # Load auxiliary copies of the student and the teacher to be able to modify them
-    with open(student_yaml, "r") as sty:
+    with open(args.student_yaml, "r") as sty:
       student_aux = yaml_parse.load(sty)
     teacher_aux = student_aux.algorithm.cost.teacher
     
     # Retrieve student subnetwork and add regression to teacher layer
-    student_hint = fitnets_hints(student_aux, [previous_guided, current_guided], teacher_aux, teacher_layers[i], regressor_type)
+    student_hint = fitnets_hints(student_aux, [previous_guided, current_guided], teacher_aux, teacher_layers[i], args.regressor_type)
    
     # Train student subnetwork
     student_hint.main_loop()
 
   
 if __name__ == "__main__":
-  main(sys.argv[1:])
+  main()

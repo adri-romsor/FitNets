@@ -5,6 +5,8 @@ import os
 import sys
 import getopt
 import cPickle as pkl
+import argparse
+import os.path as op
 
 from pylearn2.utils import serial
 from pylearn2.train_extensions.best_params import MonitorBasedSaveBest
@@ -13,38 +15,47 @@ from FitNets.models.PretrainedLayerBlock import PretrainedLayerBlock
 
 def main(argv):
 
-  try:
-    opts, args = getopt.getopt(argv, '')
-    student_yaml = args[0]
-    load_layer = int(args[1])
+  parser = argparse.ArgumentParser(
+    description='Tool for training FitNets stage 2.'
+  )
+  parser.add_argument(
+    'student_yaml',
+    help='Location of the FitNet YAML file.'
+  )
+  parser.add_argument(
+    'load_layer',
+    type=int,
+    default=None,
+    help='Integer indicating the hint layer from which to start training.'
+  )
+  parser.add_argument(
+    '--lr_scale',
+    '-lrs',
+    type=float,
+    default=None,
+    help='Optional. Float to scale the learning rate scaler.'
+  )  
 
-    if len(args) == 2 or (len(args) > 2 and int(args[2]) == 0):
-      lr_pretrained = False
-    elif int(args[2]) == 1:
-      lr_pretrained = True
-
-  except getopt.GetoptError:
-    usage()
-    sys.exit(2)
+  args = parser.parse_args()
+  assert(op.exists(args.student_yaml)) 
 
   # Load student
-  student = serial.load_train_file(student_yaml)
-  with open(student_yaml, "r") as sty:
+  with open(args.student_yaml, "r") as sty:
     student = yaml_parse.load(sty)
 
   # Load pretrained fitnet
-  hint_path = student.save_path[0:-4] + "_hintlayer" + str(load_layer) + ".pkl"
+  hint_path = student.save_path[0:-4] + "_hintlayer" + str(args.load_layer) + ".pkl"
   pretrained_model = serial.load(hint_path)
 
-  student.model.layers[0:load_layer+1] = pretrained_model.layers[0:load_layer+1]
+  student.model.layers[0:args.load_layer+1] = pretrained_model.layers[0:args.load_layer+1]
 
   del pretrained_model
 
-  if lr_pretrained:
-     for i in range(0,load_layer+1):
+  if args.lr_scale is not None:
+     for i in range(0,args.load_layer+1):
        if not isinstance(student.model.layers[i],PretrainedLayerBlock):
-	student.model.layers[i].W_lr_scale = 0.1*student.model.layers[i].W_lr_scale
-	student.model.layers[i].b_lr_scale = 0.1*student.model.layers[i].b_lr_scale
+	student.model.layers[i].W_lr_scale = student.model.layers[i].W_lr_scale*args.lr_scale
+	student.model.layers[i].b_lr_scale = student.model.layers[i].b_lr_scale*args.lr_scale
 
   student.main_loop()
 
