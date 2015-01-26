@@ -238,18 +238,6 @@ def main(argv):
    
     # Train student subnetwork
     student_hint.main_loop()
- 
-    # Load best model
-    best_path = student_hint.save_path
-    for ext in range(len(student_hint.extensions)):
-      if isinstance(student_hint.extensions[ext],MonitorBasedSaveBest):
-	best_path = student_hint.extensions[ext].save_path
-	
-    fo = open(best_path, 'r')
-    best_pretrained_model = pkl.load(fo)
-    fo.close()
-
-  
 
   
 if __name__ == "__main__":
