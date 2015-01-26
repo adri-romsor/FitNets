@@ -43,9 +43,6 @@ def main(argv):
        student.model.layers[i].W_lr_scale = 0.1*student.model.layers[i].W_lr_scale
        student.model.layers[i].b_lr_scale = 0.1*student.model.layers[i].b_lr_scale
 
-  import pdb
-  pdb.set_trace()
-
   student.main_loop()
 
 
