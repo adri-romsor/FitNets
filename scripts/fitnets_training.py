@@ -210,16 +210,12 @@ def main():
   args = parser.parse_args()
   assert(op.exists(args.student_yaml)) 
   
-<<<<<<< Updated upstream
-=======
   execute(args.student_yaml, args.regressor_type, args.lr_scale)
-  
   
 def execute(student_yaml, regressor_type, lr_scale=None):
   
->>>>>>> Stashed changes
   # Load student
-  with open(args.student_yaml, "r") as sty:
+  with open(student_yaml, "r") as sty:
     student = yaml_parse.load(sty)
     
   # Load teacher network
@@ -249,12 +245,12 @@ def execute(student_yaml, regressor_type, lr_scale=None):
     current_guided = student_layers[i]
   
     # Load auxiliary copies of the student and the teacher to be able to modify them
-    with open(args.student_yaml, "r") as sty:
+    with open(student_yaml, "r") as sty:
       student_aux = yaml_parse.load(sty)
     teacher_aux = student_aux.algorithm.cost.teacher
     
     # Retrieve student subnetwork and add regression to teacher layer
-    student_hint = fitnets_hints(student_aux, [previous_guided, current_guided], teacher_aux, teacher_layers[i], args.regressor_type)
+    student_hint = fitnets_hints(student_aux, [previous_guided, current_guided], teacher_aux, teacher_layers[i], regressor_type)
    
     # Train student subnetwork
     student_hint.main_loop()
@@ -274,12 +270,12 @@ def execute(student_yaml, regressor_type, lr_scale=None):
 
   print 'FitNets Training Stage 2: Training student softmax layer by means of KD'  
   
-  if args.lr_scale is not None:
+  if lr_scale is not None:
     # Make the learning rate smaller for the pretrained layers
     for i in range(0,student_layers[-1]+1):
       if not isinstance(student.model.layers[i],PretrainedLayerBlock):
-	student.model.layers[i].W_lr_scale = student.model.layers[i].W_lr_scale*args.lr_scale
-	student.model.layers[i].b_lr_scale = student.model.layers[i].b_lr_scale*args.lr_scale
+	student.model.layers[i].W_lr_scale = student.model.layers[i].W_lr_scale*lr_scale
+	student.model.layers[i].b_lr_scale = student.model.layers[i].b_lr_scale*lr_scale
 
   student.main_loop()
   
