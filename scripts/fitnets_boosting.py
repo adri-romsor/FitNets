@@ -7,7 +7,8 @@ from pylearn2.config import yaml_parse
 
 # my imports
 import FitNets.scripts.fitnets_training as ft
-import FitNets.scripts.make_yamls as my
+#import FitNets.scripts.make_yamls as my
+import FitNets.scripts.make_fitnets_yamls as my
 
 fitnet_save_path = '/data/lisatmp2/romerosa/evol_boost'
 
@@ -18,9 +19,7 @@ def main(argv):
     fitnet_yaml_template = args[0]
     teacher_path = args[1]
     regressor_type = args[2]
-    hint_fitnet = int(args[3])
-    hint_teacher = int(args[4])
-    nber_fitnets = int(args[5])
+    nber_fitnets = int(args[3])
   except getopt.GetoptError:
     usage()
     sys.exit(2) 
@@ -34,10 +33,10 @@ def main(argv):
     fitnet_yaml = op.join(path,fitnet_name + '.yaml')
 
     print '...Preparing yaml file'
-    my.main([fitnet_yaml_template,fitnet_name,fitnet_save_path,teacher_path, [hint_fitnet, hint_teacher]])
+    my.main([fitnet_yaml_template,fitnet_name,fitnet_save_path,teacher_path])
     
     print '...Training FitNet'
-    ft.main([fitnet_yaml, regressor_type])
+    ft.execute(fitnet_yaml, regressor_type)
     
     teacher_path = op.join(fitnet_save_path,fitnet_name + '_best.pkl')
     hint_teacher = hint_fitnet    

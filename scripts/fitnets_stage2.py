@@ -13,7 +13,7 @@ from pylearn2.train_extensions.best_params import MonitorBasedSaveBest
 
 from FitNets.models.PretrainedLayerBlock import PretrainedLayerBlock
 
-def main(argv):
+def main():
 
   parser = argparse.ArgumentParser(
     description='Tool for training FitNets stage 2.'
@@ -38,27 +38,31 @@ def main(argv):
 
   args = parser.parse_args()
   assert(op.exists(args.student_yaml)) 
+  
+  execute(args.student_yaml, args.load_layer, args.lr_scale)
+  
+def execute(student_yaml, load_layer, lr_scale=None):
 
   # Load student
-  with open(args.student_yaml, "r") as sty:
+  with open(student_yaml, "r") as sty:
     student = yaml_parse.load(sty)
 
   # Load pretrained fitnet
-  hint_path = student.save_path[0:-4] + "_hintlayer" + str(args.load_layer) + ".pkl"
+  hint_path = student.save_path[0:-4] + "_hintlayer" + str(load_layer) + ".pkl"
   pretrained_model = serial.load(hint_path)
 
-  student.model.layers[0:args.load_layer+1] = pretrained_model.layers[0:args.load_layer+1]
+  student.model.layers[0:load_layer+1] = pretrained_model.layers[0:load_layer+1]
 
   del pretrained_model
 
-  if args.lr_scale is not None:
-     for i in range(0,args.load_layer+1):
+  if lr_scale is not None:
+     for i in range(0,load_layer+1):
        if not isinstance(student.model.layers[i],PretrainedLayerBlock):
-	student.model.layers[i].W_lr_scale = student.model.layers[i].W_lr_scale*args.lr_scale
-	student.model.layers[i].b_lr_scale = student.model.layers[i].b_lr_scale*args.lr_scale
+	student.model.layers[i].W_lr_scale = student.model.layers[i].W_lr_scale*lr_scale
+	student.model.layers[i].b_lr_scale = student.model.layers[i].b_lr_scale*lr_scale
 
   student.main_loop()
 
 
 if __name__ == "__main__":
-  main(sys.argv[1:])
+  main()
