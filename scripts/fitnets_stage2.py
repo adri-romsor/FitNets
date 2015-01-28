@@ -38,6 +38,14 @@ def main(argv):
 
   args = parser.parse_args()
   assert(op.exists(args.student_yaml)) 
+<<<<<<< Updated upstream
+=======
+  
+  execute(args.student_yaml, args.load_layer, args.lr_scale)
+  
+  
+def execute(student_yaml, load_layer, lr_scale=None):
+>>>>>>> Stashed changes
 
   # Load student
   with open(args.student_yaml, "r") as sty:

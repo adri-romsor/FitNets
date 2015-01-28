@@ -202,6 +202,14 @@ def main():
   args = parser.parse_args()
   assert(op.exists(args.student_yaml))
   
+<<<<<<< Updated upstream
+=======
+  execute(args.student_yaml, args.regressor_type)
+  
+  
+def execute(student_yaml, regressor_type):
+  
+>>>>>>> Stashed changes
   # Load student
   with open(args.student_yaml, "r") as sty:
     student = yaml_parse.load(sty)
