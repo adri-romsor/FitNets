@@ -1,3 +1,4 @@
+
 from pylearn2.config import yaml_parse
 from pylearn2 import train
 
@@ -56,7 +57,7 @@ def execute(student_yaml, load_layer, lr_scale=None):
   del pretrained_model
 
   if lr_scale is not None:
-     for i in range(0,load_layer+1):
+     for i in range(1,load_layer+1):
        if not isinstance(student.model.layers[i],PretrainedLayerBlock):
 	student.model.layers[i].W_lr_scale = student.model.layers[i].W_lr_scale*lr_scale
 	student.model.layers[i].b_lr_scale = student.model.layers[i].b_lr_scale*lr_scale

@@ -272,7 +272,7 @@ def execute(student_yaml, regressor_type, lr_scale=None):
   
   if lr_scale is not None:
     # Make the learning rate smaller for the pretrained layers
-    for i in range(0,student_layers[-1]+1):
+    for i in range(1,student_layers[-1]+1):
       if not isinstance(student.model.layers[i],PretrainedLayerBlock):
 	student.model.layers[i].W_lr_scale = student.model.layers[i].W_lr_scale*lr_scale
 	student.model.layers[i].b_lr_scale = student.model.layers[i].b_lr_scale*lr_scale
