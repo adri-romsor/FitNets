@@ -38,9 +38,7 @@ def main(argv):
     print '...Training FitNet'
     ft.execute(fitnet_yaml, regressor_type)
     
-    teacher_path = op.join(fitnet_save_path,fitnet_name + '_best.pkl')
-    hint_teacher = hint_fitnet    
-    
+    teacher_path = op.join(fitnet_save_path,fitnet_name + '_best.pkl')    
   
 if __name__ == "__main__":
   main(sys.argv[1:])
