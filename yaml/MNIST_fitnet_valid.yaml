@@ -1,0 +1,132 @@
+!obj:pylearn2.train.Train {
+    dataset: &train !obj:pylearn2.datasets.mnist.MNIST {
+        which_set: 'train',
+        axes: ['c', 0, 1, 'b'],
+        start: 0,
+        stop: 50000
+    },
+    model: !obj:pylearn2.models.mlp.MLP {
+        batch_size: 128,
+        layers: [
+                 !obj:pylearn2.models.maxout.MaxoutConvC01B {
+                     layer_name: 'h0',
+                     pad: 0,
+                     num_channels: 16,
+                     num_pieces: 2,
+                     kernel_shape: [5, 5],
+                     pool_shape: [1, 1],
+                     pool_stride: [1, 1],
+                     irange: .005,
+                     max_kernel_norm: .9,
+                 },
+                 !obj:pylearn2.models.maxout.MaxoutConvC01B {
+                     layer_name: 'h1',
+                     pad: 0,
+                     num_channels: 16,
+                     num_pieces: 2,
+                     kernel_shape: [3, 3],
+                     pool_shape: [4, 4],
+                     pool_stride: [2, 2],
+                     irange: .005,
+                     max_kernel_norm: .9,
+                 },
+                 !obj:pylearn2.models.maxout.MaxoutConvC01B {
+                     layer_name: 'h2',
+                     pad: 3,
+                     num_channels: 16,
+                     num_pieces: 2,
+                     kernel_shape: [5, 5],
+                     pool_shape: [1, 1],
+                     pool_stride: [1, 1],
+                     irange: .005,
+                     max_kernel_norm: 1.9365,
+                 },
+                 !obj:pylearn2.models.maxout.MaxoutConvC01B {
+                     layer_name: 'h3',
+                     pad: 0,
+                     num_channels: 16,
+                     num_pieces: 2,
+                     kernel_shape: [3, 3],
+                     pool_shape: [4, 4],
+                     pool_stride: [2, 2],
+                     irange: .005,
+                     max_kernel_norm: 1.9365,
+                 },
+                 !obj:pylearn2.models.maxout.MaxoutConvC01B {
+                     pad: 3,
+                     layer_name: 'h4',
+                     num_channels: 12,
+                     num_pieces: 4,
+                     kernel_shape: [3, 3],
+                     pool_shape: [1, 1],
+                     pool_stride: [1, 1],
+                     irange: .005,
+                     max_kernel_norm: 1.9365,
+                 },
+                 !obj:pylearn2.models.maxout.MaxoutConvC01B {
+                     pad: 0,
+                     layer_name: 'h5',
+                     num_channels: 12,
+                     num_pieces: 4,
+                     kernel_shape: [3, 3],
+                     pool_shape: [2, 2],
+                     pool_stride: [2, 2],
+                     irange: .005,
+                     max_kernel_norm: 1.9365,
+                 },
+                 !obj:pylearn2.models.mlp.Softmax {
+                     max_col_norm: 1.9365,
+                     layer_name: 'y',
+                     n_classes: 10,
+                     irange: .005
+                 }
+                ],
+        input_space: !obj:pylearn2.space.Conv2DSpace {
+            shape: [28, 28],
+            num_channels: 1,
+            axes: ['c', 0, 1, 'b'],
+        },
+    },
+    algorithm: !obj:pylearn2.training_algorithms.sgd.SGD {
+        learning_rate: .0005,
+        learning_rule: !obj:pylearn2.training_algorithms.learning_rule.RMSProp {
+          decay: 0.9,
+          max_scaling: 100000.0,
+        },
+        train_iteration_mode: 'even_shuffled_sequential',
+        monitor_iteration_mode: 'even_sequential',
+        monitoring_dataset:
+            {
+                'valid' : &valid !obj:pylearn2.datasets.mnist.MNIST {
+                              axes: ['c', 0, 1, 'b'],
+                              which_set: 'train',
+                              start: 50000,
+                              stop:  60000
+                          },
+            },
+        cost: !obj:FitNets.costs.KDCost.KDCost {
+          teacher_path: "<path_teacher_pkl>",
+          temperature: 3,
+          lambda_teach: 4,
+          hints: [[3,1]],
+        },
+        termination_criterion: !obj:pylearn2.termination_criteria.MonitorBased {
+            channel_name: "valid_y_misclass",
+            prop_decrease: 0.,
+            N: 100
+        },
+    },
+    extensions: [
+        !obj:pylearn2.train_extensions.best_params.MonitorBasedSaveBest {
+             channel_name: 'valid_y_misclass',
+             save_path: "mnist_best.pkl"
+        },
+        !obj:FitNets.extensions.TeacherDecayOverEpoch.TeacherDecayOverEpoch {
+            start: 5,
+            saturate: 150,
+            final_lambda_teach: 0
+        },
+    ],
+    save_path:  "mnist.pkl",
+    save_freq: 1
+}

@@ -2,6 +2,8 @@ import math
 import random
 import os, sys, getopt
 import cPickle as pkl
+import argparse
+import os.path as op
 
 # pylearn2 imports
 from pylearn2.config import yaml_parse
@@ -181,17 +183,35 @@ def fitnets_hints(student, fromto_student, teacher, hintlayer, regressor_type):
   student.save_path = student.save_path[0:-4] + "_hintlayer" + str(fromto_student[1]) + ".pkl"
     
   return student
-    
-def main(argv):
+
+
+def main():
+  parser = argparse.ArgumentParser(
+  description='Tool for training FitNets in a stage-wise fashion.'
+  )
+  parser.add_argument(
+  'student_yaml',
+  help='Location of the FitNet YAML file.'
+  )
+  parser.add_argument(
+  'regressor_type',
+  default='conv',
+  help='Regressor type: either convolutional, conv, or fully-connected, fc.'
+  )
+  parser.add_argument(
+  '--hints_epochs',
+  '-he',
+  type=int,
+  default=None,
+  help='Optional. Integer to set the number of hints training epochs, when training with the whole dataset.'
+  )
+  args = parser.parse_args()
+  assert(op.exists(args.student_yaml))
   
-  try:
-    opts, args = getopt.getopt(argv, '')
-    student_yaml = args[0]
-    regressor_type = args[1]
-  except getopt.GetoptError:
-    usage()
-    sys.exit(2) 
-       
+  execute(args.student_yaml, args.regressor_type, args.hints_epochs)
+
+
+def execute(student_yaml, regressor_type, hints_epochs=None):    
 
   # Load student
   with open(student_yaml, "r") as sty:
@@ -230,6 +250,10 @@ def main(argv):
     
     # Retrieve student subnetwork and add regression to teacher layer
     student_hint = fitnets_hints(student_aux, [previous_guided, current_guided], teacher_aux, teacher_layers[i], regressor_type)
+    
+    # When training with the whole dataset, set termination_criterion.max_epochs to the epochs determined by the validation set.
+    if hints_epochs is not None:
+      student_hint.algorithm.termination_criterion._max_epochs = hints_epochs 
    
     # Train student subnetwork
     student_hint.main_loop()
@@ -285,4 +309,4 @@ def main(argv):
   #student.main_loop()
   
 if __name__ == "__main__":
-  main(sys.argv[1:])
+  main()
