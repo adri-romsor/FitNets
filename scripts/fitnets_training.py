@@ -205,13 +205,20 @@ def main():
   default=None,
   help='Optional. Integer to set the number of hints training epochs, when training with the whole dataset.'
   )
+  parser.add_argument(
+    '--lr_scale',
+    '-lrs',
+    type=float,
+    default=1,
+    help='Optional. Float to scale the learning rate scaler of the pre-trained layers.'
+  ) 
   args = parser.parse_args()
   assert(op.exists(args.student_yaml))
   
-  execute(args.student_yaml, args.regressor_type, args.hints_epochs)
+  execute(args.student_yaml, args.regressor_type, args.hints_epochs, args.lr_scale)
 
 
-def execute(student_yaml, regressor_type, hints_epochs=None):    
+def execute(student_yaml, regressor_type, hints_epochs=None, lr_scale=1):    
 
   # Load student
   with open(student_yaml, "r") as sty:
@@ -272,6 +279,10 @@ def execute(student_yaml, regressor_type, hints_epochs=None):
     student.model.layers[0:current_guided+1] = best_pretrained_model.layers[0:current_guided+1]
 
   print 'FitNets Training Stage 2: Training student softmax layer by means of KD'
+  
+  for i in range(0,current_guided+1):
+	student.model.layers[i].W_lr_scale = student.model.layers[i].W_lr_scale*lr_scale
+	student.model.layers[i].b_lr_scale = student.model.layers[i].b_lr_scale*lr_scale  
  
   student.main_loop()
   
