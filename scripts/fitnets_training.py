@@ -218,7 +218,7 @@ def main():
   execute(args.student_yaml, args.regressor_type, args.hints_epochs, args.lr_scale)
 
 
-def execute(student_yaml, regressor_type, hints_epochs=None, lr_scale=1):    
+def execute(student_yaml, regressor_type, hints_epochs=None, lr_scale=1.0):    
 
   # Load student
   with open(student_yaml, "r") as sty:
