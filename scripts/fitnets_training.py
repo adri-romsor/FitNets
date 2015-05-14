@@ -209,7 +209,7 @@ def main():
     '--lr_scale',
     '-lrs',
     type=float,
-    default=1,
+    default=1.0,
     help='Optional. Float to scale the learning rate scaler of the pre-trained layers.'
   ) 
   args = parser.parse_args()
@@ -281,9 +281,9 @@ def execute(student_yaml, regressor_type, hints_epochs=None, lr_scale=1.0):
   print 'FitNets Training Stage 2: Training student softmax layer by means of KD'
   
   for i in range(0,current_guided+1):
-	if not hasattr(student.model.layers[i], 'W_lr_scale'):
+	if student.model.layers[i].W_lr_scale is None:
 		student.model.layers[i].W_lr_scale = 1
-	if not hasattr(student.model.layers[i], 'b_lr_scale'):
+	if student.model.layers[i].b_lr_scale is None:
 		student.model.layers[i].b_lr_scale = 1		
 	
 	student.model.layers[i].W_lr_scale = student.model.layers[i].W_lr_scale*lr_scale
